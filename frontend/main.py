@@ -456,6 +456,15 @@ async def home():
             # Mutable state dict to avoid nonlocal issues in nested async functions
             state = {"active_category": "Todos", "products": products}
 
+            def filter_by(cat_name):
+                state["active_category"] = cat_name
+                if cat_name == "Todos":
+                    state["products"] = products
+                else:
+                    state["products"] = [p for p in products if p["category"] == cat_name]
+                render_pills()
+                render_products(state["products"])
+
             def render_products(prods: list[dict]):
                 grid_container.clear()
                 with grid_container:
