@@ -121,14 +121,25 @@ class TestCategoryFilter:
             pytest.skip("Categoria Eletrônicos não encontrada")
         pill.click()
         
-        # O filtro via websocket pode demorar uns ms. Usamos expect (auto-retry)
+        # O filtro via websocket pode demorar uns ms para remover os itens antigos.
+        # Polling até que todos os emblemas visíveis sejam apenas "Eletrônicos"
         badges = page.locator(".product-badge")
-        expect(badges.first).to_have_text("Eletrônicos", timeout=TIMEOUT)
+        for _ in range(20):  # tenta por até 10 segundos
+            count = badges.count()
+            if count > 0:
+                all_match = True
+                for i in range(count):
+                    if badges.nth(i).inner_text() != "Eletrônicos":
+                        all_match = False
+                        break
+                if all_match:
+                    break
+            page.wait_for_timeout(500)
         
         count = badges.count()
-        if count > 0:
-            for i in range(count):
-                assert badges.nth(i).inner_text() == "Eletrônicos"
+        assert count > 0, "Nenhum produto encontrado após o filtro"
+        for i in range(count):
+            assert badges.nth(i).inner_text() == "Eletrônicos"
 
     def test_filter_todos_shows_all_products(self, page: Page):
         """Clicar em 'Todos' após filtrar deve mostrar todos os produtos."""
