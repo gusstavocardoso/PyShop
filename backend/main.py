@@ -5,6 +5,9 @@ import os
 from database import Base, engine
 from routers import products, orders
 
+# Diretório de arquivos estáticos — caminho absoluto para funcionar em qualquer CWD
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+
 app = FastAPI(
     title="PyShop API",
     description="API da loja virtual PyShop",
@@ -21,7 +24,7 @@ app.add_middleware(
 )
 
 # ─── Static files (product images) ───────────────────────────────────────────
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # ─── Routers ─────────────────────────────────────────────────────────────────
 app.include_router(products.router)

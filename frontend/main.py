@@ -411,8 +411,8 @@ def render_navbar():
             # Nav links
             ui.html('<span class="nav-link" onclick="window.location=\'/\'">Produtos</span>')
 
-            # Cart icon with reactive badge
-            with ui.element("div").style("position:relative; cursor:pointer").on("click", lambda: ui.navigate.to("/cart")):
+            # Cart icon with reactive badge — id for E2E testing
+            with ui.element("div").props('id="navbar-cart-btn"').style("position:relative; cursor:pointer").on("click", lambda: ui.navigate.to("/cart")):
                 ui.icon("shopping_cart", size="1.4rem").style("color:white")
                 render_cart_badge()
 
@@ -486,28 +486,37 @@ async def home():
                     for c in categories:
                         is_active = "active" if c == state["active_category"] else ""
                         ui.button(c, on_click=lambda _, cat_=c: filter_by(cat_)).classes(f"cat-pill {is_active}")
-                    ui.button(c, on_click=lambda _, cat_=c: filter_by(cat_)).classes(f"cat-pill {is_active}")
 
-            # Initial render of products
+            # Initial render of products and category pills
+            render_pills()
             render_products(products)
 
         render_footer()
 
-    def add_to_cart(prod: dict):
-        pid = prod["id"]
-        if pid in cart:
-            cart[pid]["quantity"] += 1
-        else:
-            cart[pid] = {"product": prod, "quantity": 1}
-        # Refresh the navbar badge immediately — no page reload needed
-        render_cart_badge.refresh()
-        ui.notify(
-            f'✅ "{prod["name"]}" adicionado ao carrinho!',
-            type="positive",
-            classes="toast",
-            position="bottom-right",
-            timeout=2500,
-        )
+
+# ─── Test Helper: limpa o carrinho (usado nos testes E2E) ─────────────────────
+@ui.page("/clear-cart")
+def clear_cart_route():
+    """Rota auxiliar para testes E2E — reseta o estado do carrinho."""
+    cart.clear()
+    ui.navigate.to("/")
+
+
+def add_to_cart(prod: dict):
+    pid = prod["id"]
+    if pid in cart:
+        cart[pid]["quantity"] += 1
+    else:
+        cart[pid] = {"product": prod, "quantity": 1}
+    # Refresh the navbar badge immediately — no page reload needed
+    render_cart_badge.refresh()
+    ui.notify(
+        f'✅ "{prod["name"]}" adicionado ao carrinho!',
+        type="positive",
+        classes="toast",
+        position="bottom-right",
+        timeout=2500,
+    )
 
 
 # ─── Cart Page ────────────────────────────────────────────────────────────────
