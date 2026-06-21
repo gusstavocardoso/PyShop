@@ -43,3 +43,6 @@ rxconfig.py
 
 # NiceGUI cache
 .nicegui/
+test_pyshop.db
+*.db
+__pycache__/
