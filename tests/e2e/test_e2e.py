@@ -115,14 +115,17 @@ class TestCategoryFilter:
 
     def test_filter_by_eletronicos(self, page: Page):
         """Filtrar por Eletrônicos deve mostrar apenas produtos dessa categoria."""
+        import re
         page.wait_for_selector(".cat-pill", timeout=TIMEOUT)
         
-        # Pega a segunda pill que sempre é "Eletrônicos" de acordo com o seed
-        pills = page.locator(".cat-pill")
-        if pills.count() < 2:
-            pytest.skip("Categorias insuficientes")
+        # O banco de dados PostgreSQL não garante a ordem dos itens.
+        # Portanto, nth(1) pode ser 'Moda' ou 'Fotografia'.
+        # Para evitar problemas com acentuação no CI, usamos regex.
+        pill = page.locator(".cat-pill", has_text=re.compile(r"Eletr"))
+        if pill.count() == 0:
+            pytest.skip("Categoria Eletrônicos não encontrada")
             
-        pill = pills.nth(1)
+        pill = pill.first
         
         badges = page.locator(".product-badge")
         
