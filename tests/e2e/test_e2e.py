@@ -118,43 +118,29 @@ class TestCategoryFilter:
         import re
         page.wait_for_selector(".cat-pill", timeout=TIMEOUT)
         
-        # O banco de dados PostgreSQL não garante a ordem dos itens.
-        # Portanto, nth(1) pode ser 'Moda' ou 'Fotografia'.
-        # Para evitar problemas com acentuação no CI, usamos regex.
+        # O NiceGUI precisa de um tempo para estabelecer o WebSocket após o load da página.
+        # Esperamos 2 segundos para garantir que o click não se perca na rede.
+        page.wait_for_timeout(2000)
+        
         pill = page.locator(".cat-pill", has_text=re.compile(r"Eletr"))
         if pill.count() == 0:
             pytest.skip("Categoria Eletrônicos não encontrada")
             
         pill = pill.first
         
+        # Conta quantos produtos temos antes de filtrar
+        original_count = page.locator(".product-card").count()
+        
+        pill.click()
+        
+        # Espera ativamente (auto-retry) até que a contagem de cards mude
+        # Isso significa que o servidor processou o filtro e atualizou o DOM
+        expect(page.locator(".product-card")).not_to_have_count(original_count, timeout=TIMEOUT)
+        
+        # Agora é seguro validar que os que sobraram são todos 'Eletrônicos'
         badges = page.locator(".product-badge")
-        
-        # Polling: clica na pill e verifica se o DOM atualizou. 
-        # Clicar dentro do loop garante que, se o websocket perder o primeiro click (muito rápido),
-        # ele tenta novamente, e também garante que não tenhamos falso-positivos de timing.
-        success = False
-        for _ in range(20):  # tenta por até 10 segundos
-            pill.click()
-            page.wait_for_timeout(500)
-            
-            count = badges.count()
-            if count > 0:
-                all_match = True
-                for i in range(count):
-                    # O seed de Eletrônicos pode vir com problemas de encoding no CI, então validamos
-                    # se o texto contém 'Eletr' ou se é igual
-                    text = badges.nth(i).inner_text()
-                    if "Eletr" not in text:
-                        all_match = False
-                        break
-                if all_match:
-                    success = True
-                    break
-        
-        assert success, "O filtro não foi aplicado corretamente após múltiplas tentativas"
-        
         count = badges.count()
-        assert count > 0, "Nenhum produto encontrado após o filtro"
+        assert count > 0, "Filtro removeu todos os produtos"
         for i in range(count):
             assert "Eletr" in badges.nth(i).inner_text()
 
