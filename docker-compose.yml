@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: pyshop_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pyshop
+      POSTGRES_PASSWORD: pyshop_secret
+      POSTGRES_DB: pyshop_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pyshop -d pyshop_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pyshop_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://pyshop:pyshop_secret@db:5432/pyshop_db
+      IMAGE_BASE_URL: http://localhost:8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/static:/app/static
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pyshop_frontend
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://backend:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
