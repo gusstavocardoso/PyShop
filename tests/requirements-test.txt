@@ -14,3 +14,4 @@ psycopg2-binary==2.9.9
 # ── Testes E2E ────────────────────────────────────────────────────────────────
 playwright==1.45.0
 pytest-playwright==0.5.1
+allure-pytest==2.13.5
